@@ -3,11 +3,7 @@ const { MongoClient, ObjectId } = require('mongodb');
 const cors = require('cors');
 
 const app = express();
-
-// 1. USE RENDER'S PORT (Critical Fix)
 const PORT = process.env.PORT || 3000;
-
-// 2. USE RENDER'S DATABASE URL (Critical Fix)
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017';
 const DB_NAME = 'esportsDB';
 
@@ -18,27 +14,14 @@ let db;
 
 async function startServer() {
     try {
-        console.log('🟡 Connecting to MongoDB...');
-        console.log(`   (URI Length: ${MONGO_URI.length})`); // Debug: check if env var exists
-
         const client = await MongoClient.connect(MONGO_URI);
         db = client.db(DB_NAME);
-        
         console.log(`✅ ARENA X SERVER ONLINE: ${DB_NAME}`);
-        
-        // 3. START SERVER ONLY AFTER DB CONNECTS
-        app.listen(PORT, '0.0.0.0', () => {
-            console.log(`🚀 SYSTEM READY ON PORT ${PORT}`);
-        });
-
-    } catch (err) {
-        console.error('❌ CRITICAL SYSTEM FAILURE:', err);
-        // Keep the process alive so you can read the logs in Render
-        process.exit(1); 
-    }
+        app.listen(PORT, () => console.log(`🚀 SYSTEM READY ON PORT ${PORT}`));
+    } catch (err) { console.error('❌ SYSTEM FAILURE:', err); }
 }
-
 startServer();
+
 // --- CRUD ROUTES ---
 
 // TEAMS
@@ -63,15 +46,16 @@ app.delete('/api/teams/:id', async (req, res) => {
     res.json({ status: 'deleted' });
 });
 
-// PLAYERS (Updated with ASSISTS)
+// PLAYERS (Updated with ROLE and Game Dropdown support)
 app.post('/api/players', async (req, res) => {
     try {
         const player = {
             gamertag: req.body.gamertag,
             teamId: req.body.teamId ? new ObjectId(req.body.teamId) : null,
-            gameName: req.body.gameName,
-            kills: parseInt(req.body.kills) || 0,     // Attribute: kills
-            assists: parseInt(req.body.assists) || 0 // Attribute: assists (NEW)
+            gameName: req.body.gameName, // Now comes from dropdown
+            role: req.body.role,         // NEW: Sniper, IGL, etc.
+            kills: parseInt(req.body.kills) || 0,
+            assists: parseInt(req.body.assists) || 0
         };
         await db.collection('players').insertOne(player);
         res.json({ status: 'ok' });
@@ -85,11 +69,12 @@ app.delete('/api/players/:id', async (req, res) => {
     res.json({ status: 'deleted' });
 });
 
-// REFEREES
+// REFEREES (Updated with GAME selection)
 app.post('/api/referees', async (req, res) => {
     try {
         const ref = {
-            refereeName: req.body.refereeName, // Attribute: refereeName
+            refereeName: req.body.refereeName,
+            gameName: req.body.gameName, // NEW: Specific game specialization
             experience: parseInt(req.body.experience),
             matchesManaged: parseInt(req.body.matchesManaged) || 0
         };
@@ -99,17 +84,17 @@ app.post('/api/referees', async (req, res) => {
 });
 app.get('/api/referees', async (req, res) => res.json(await db.collection('referees').find().toArray()));
 
-// MATCHES
+// MATCHES (Updated with GAME selection)
 app.post('/api/matches', async (req, res) => {
     try {
         const match = {
-            gameName: req.body.gameName,
-            round: req.body.round, // Attribute: round
+            gameName: req.body.gameName, // Now comes from dropdown
+            round: req.body.round,
             teamAId: new ObjectId(req.body.teamAId),
             teamBId: new ObjectId(req.body.teamBId),
-            scoreA: parseInt(req.body.scoreA), // Attribute: score
+            scoreA: parseInt(req.body.scoreA),
             scoreB: parseInt(req.body.scoreB),
-            winnerId: req.body.winnerId ? new ObjectId(req.body.winnerId) : null, // Attribute: winner
+            winnerId: req.body.winnerId ? new ObjectId(req.body.winnerId) : null,
             refereeId: req.body.refereeId ? new ObjectId(req.body.refereeId) : null
         };
         await db.collection('matches').insertOne(match);
@@ -132,8 +117,8 @@ app.post('/api/awards', async (req, res) => {
     try {
         const award = {
             title: req.body.title,
-            category: req.body.category, // Attribute: mvp (stored as category)
-            matchId: req.body.matchId ? new ObjectId(req.body.matchId) : null, // Attribute: matchId
+            category: req.body.category,
+            matchId: req.body.matchId ? new ObjectId(req.body.matchId) : null,
             playerId: req.body.playerId ? new ObjectId(req.body.playerId) : null
         };
         await db.collection('awards').insertOne(award);
@@ -146,99 +131,58 @@ app.delete('/api/awards/:id', async (req, res) => {
     res.json({ status: 'deleted' });
 });
 
-// ==========================================
-//           10 SPECIFIC QUERIES
-// ==========================================
-
-// 1. List players with the highest total kills.
+// --- QUERIES ---
 app.get('/api/queries/highestKills', async (req, res) => {
-    // Sorts by kills descending, takes top 5
-    const data = await db.collection('players').find().sort({ kills: -1 }).limit(5).toArray();
-    res.json(data);
+    res.json(await db.collection('players').find().sort({ kills: -1 }).limit(5).toArray());
 });
-
-// 2. Find teams that reached the semifinals.
 app.get('/api/queries/semifinals', async (req, res) => {
-    // Filters matches where round is 'Semifinal', joins with Team data to get names
-    const data = await db.collection('matches').aggregate([
+    res.json(await db.collection('matches').aggregate([
         { $match: { round: 'Semifinal' } },
         { $lookup: { from: 'teams', localField: 'teamAId', foreignField: '_id', as: 'TeamA' } },
-        { $lookup: { from: 'teams', localField: 'teamBId', foreignField: '_id', as: 'TeamB' } },
-        { $project: { 
-            Round: '$round', 
-            TeamA: { $arrayElemAt: ['$TeamA.teamName', 0] }, 
-            TeamB: { $arrayElemAt: ['$TeamB.teamName', 0] } 
-        }}
-    ]).toArray();
-    res.json(data);
+        { $unwind: '$TeamA' },
+        { $project: { TeamName: '$TeamA.teamName', Round: 'Semifinal', Game: '$gameName' } }
+    ]).toArray());
 });
-
-// 3. Show referees who managed more than 10 matches.
 app.get('/api/queries/activeReferees', async (req, res) => {
-    const data = await db.collection('referees').find({ matchesManaged: { $gt: 10 } }).toArray();
-    res.json(data);
+    res.json(await db.collection('referees').find({ matchesManaged: { $gt: 10 } }).toArray());
 });
-
-// 4. Retrieve players who participated in multiple games.
 app.get('/api/queries/multiGamePlayers', async (req, res) => {
-    // Groups by gamertag, counts unique gameNames
-    const data = await db.collection('players').aggregate([
+    res.json(await db.collection('players').aggregate([
         { $group: { _id: "$gamertag", games: { $addToSet: "$gameName" }, count: { $sum: 1 } } },
         { $match: { count: { $gt: 1 } } }
-    ]).toArray();
-    res.json(data);
+    ]).toArray());
 });
-
-// 5. Identify MVPs for each match.
 app.get('/api/queries/matchMVPs', async (req, res) => {
-    const data = await db.collection('awards').aggregate([
+    res.json(await db.collection('awards').aggregate([
         { $match: { category: 'MVP' } },
         { $lookup: { from: 'players', localField: 'playerId', foreignField: '_id', as: 'p' } },
         { $unwind: '$p' },
-        { $project: { Title: '$title', Player: '$p.gamertag', MatchID: '$matchId' } }
-    ]).toArray();
-    res.json(data);
+        { $project: { Award: '$title', Gamertag: '$p.gamertag', MatchId: '$matchId' } }
+    ]).toArray());
 });
-
-// 6. Calculate average team score per game.
+app.get('/api/queries/top3Teams', async (req, res) => {
+    res.json(await db.collection('teams').find().sort({ totalScore: -1 }).limit(3).toArray());
+});
+app.get('/api/queries/zeroWinTeams', async (req, res) => {
+    res.json(await db.collection('teams').find({ wins: 0 }).toArray());
+});
+app.get('/api/queries/drawMatches', async (req, res) => {
+    res.json(await db.collection('matches').find({ winnerId: null }).toArray());
+});
 app.get('/api/queries/avgTeamScore', async (req, res) => {
-    // Calculates average of scoreA for teamA
-    const data = await db.collection('matches').aggregate([
+    res.json(await db.collection('matches').aggregate([
         { $group: { _id: "$teamAId", avgScore: { $avg: "$scoreA" } } },
         { $lookup: { from: 'teams', localField: '_id', foreignField: '_id', as: 't' } },
         { $unwind: '$t' },
         { $project: { Team: '$t.teamName', AvgScore: { $round: ["$avgScore", 1] } } }
-    ]).toArray();
-    res.json(data);
+    ]).toArray());
 });
-
-// 7. Find players who won both MVP and Top Scorer.
 app.get('/api/queries/dualWinners', async (req, res) => {
-    const data = await db.collection('awards').aggregate([
+    res.json(await db.collection('awards').aggregate([
         { $group: { _id: "$playerId", categories: { $addToSet: "$category" } } },
         { $match: { categories: { $all: ["MVP", "Top Scorer"] } } },
         { $lookup: { from: 'players', localField: '_id', foreignField: '_id', as: 'p' } },
         { $unwind: '$p' },
         { $project: { Gamertag: '$p.gamertag', Awards: '$categories' } }
-    ]).toArray();
-    res.json(data);
-});
-
-// 8. Show matches that ended in a draw.
-app.get('/api/queries/drawMatches', async (req, res) => {
-    // Logic: WinnerID is null
-    const data = await db.collection('matches').find({ winnerId: null }).toArray();
-    res.json(data);
-});
-
-// 9. Retrieve teams with zero wins.
-app.get('/api/queries/zeroWinTeams', async (req, res) => {
-    const data = await db.collection('teams').find({ wins: 0 }).toArray();
-    res.json(data);
-});
-
-// 10. List top 3 teams by total score.
-app.get('/api/queries/top3Teams', async (req, res) => {
-    const data = await db.collection('teams').find().sort({ totalScore: -1 }).limit(3).toArray();
-    res.json(data);
+    ]).toArray());
 });

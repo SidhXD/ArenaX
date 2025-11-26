@@ -25,8 +25,6 @@
             min-height: 100vh;
             overflow-x: hidden;
             position: relative;
-            /* Optional: Hide default cursor if using custom one */
-            /* cursor: none; */ 
         }
 
         .bg-grid {
@@ -34,43 +32,18 @@
             background-image: linear-gradient(rgba(0, 243, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.1) 1px, transparent 1px);
             background-size: 50px 50px;
             transform: perspective(500px) rotateX(60deg) translateY(-100px) scale(2);
-            animation: moveGrid 5s linear infinite; 
-            z-index: -3; 
-            opacity: 0.2; 
-            pointer-events: none; /* CRITICAL: Ensures background doesn't block clicks */
+            animation: moveGrid 5s linear infinite; z-index: -3; opacity: 0.2; pointer-events: none;
         }
 
         .spotlight {
             position: fixed; width: 800px; height: 800px; border-radius: 50%;
-            filter: blur(100px); opacity: 0.4; 
-            z-index: -1; 
-            pointer-events: none; /* CRITICAL */
-            mix-blend-mode: screen;
+            filter: blur(100px); opacity: 0.4; z-index: -1; pointer-events: none; mix-blend-mode: screen;
         }
         .spot-tl { top: -400px; left: -400px; background: radial-gradient(circle, var(--neon-red), transparent 70%); animation: cycle 10s infinite; }
         .spot-tr { top: -400px; right: -400px; background: radial-gradient(circle, var(--neon-cyan), transparent 70%); animation: cycle 12s infinite reverse; }
         .spot-bl { bottom: -400px; left: -400px; background: radial-gradient(circle, var(--neon-yellow), transparent 70%); animation: cycle 15s infinite; }
         .spot-br { bottom: -400px; right: -400px; background: radial-gradient(circle, #bd00ff, transparent 70%); animation: cycle 18s infinite reverse; }
 
-        /* --- TACTICAL CROSSHAIR (FIXED) --- */
-        #crosshair-cursor {
-            position: fixed;
-            top: 0; left: 0;
-            width: 40px; height: 40px;
-            z-index: 9999; /* Highest layer */
-            pointer-events: none !important; /* !!! FIX: THIS ALLOWS CLICKS TO PASS THROUGH !!! */
-            transform: translate(-50%, -50%);
-            display: flex; align-items: center; justify-content: center;
-            mix-blend-mode: screen;
-        }
-        .ch-dot {
-            position: absolute; width: 4px; height: 4px; background-color: var(--neon-red); border-radius: 50%; box-shadow: 0 0 8px var(--neon-red);
-        }
-        .ch-spin {
-            animation: rotateReticle 4s linear infinite; opacity: 0.9;
-        }
-
-        @keyframes rotateReticle { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @keyframes moveGrid { 0% { background-position: 0 0; } 100% { background-position: 0 50px; } }
         @keyframes cycle { 0%, 100% { filter: blur(100px) hue-rotate(0deg); } 50% { filter: blur(100px) hue-rotate(60deg); } }
         @keyframes logoPulse { 0% { box-shadow: 0 0 20px var(--neon-red); } 50% { box-shadow: 0 0 50px var(--neon-red); } 100% { box-shadow: 0 0 20px var(--neon-red); } }
@@ -78,7 +51,6 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         /* --- LAYOUT --- */
-        /* FIX: Increased z-index to 10 to sit ABOVE background animations */
         .container { max-width: 1400px; margin: 0 auto; padding: 20px; position: relative; z-index: 10; }
 
         header { display: flex; align-items: center; justify-content: center; gap: 30px; padding: 60px 20px; }
@@ -97,7 +69,7 @@
             background: rgba(0, 243, 255, 0.05); border: 1px solid var(--neon-cyan); color: var(--neon-cyan);
             padding: 12px 25px; font-family: 'Orbitron'; font-weight: bold; cursor: pointer; transition: 0.3s;
             clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
-            position: relative; z-index: 20; /* Ensure buttons are clickable */
+            position: relative; z-index: 20;
         }
         .tab-btn:hover { background: var(--neon-cyan); color: black; box-shadow: 0 0 20px var(--neon-cyan); }
         .tab-btn.active { background: var(--neon-red); border-color: var(--neon-red); color: white; box-shadow: 0 0 25px var(--neon-red); }
@@ -179,6 +151,12 @@
         .data-table td { border-bottom: 1px solid #222; padding: 10px; color: #ddd; }
         .data-table tr:hover td { background: rgba(0, 255, 153, 0.1); color: white; }
 
+        /* CROSSHAIR */
+        #crosshair-cursor { position: fixed; top: 0; left: 0; width: 40px; height: 40px; z-index: 9999; pointer-events: none !important; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; mix-blend-mode: screen; }
+        .ch-dot { position: absolute; width: 4px; height: 4px; background-color: var(--neon-red); border-radius: 50%; box-shadow: 0 0 8px var(--neon-red); }
+        .ch-spin { animation: rotateReticle 4s linear infinite; opacity: 0.9; }
+        @keyframes rotateReticle { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
         @media (max-width: 900px) { .analytics-layout { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -226,7 +204,14 @@
                 <div class="form-grid">
                     <div><label>TEAM NAME</label><input type="text" id="teamName"></div>
                     <div><label>GAME</label>
-                        <select id="teamGame"><option>Valorant</option><option>CS:GO</option><option>League of Legends</option><option>Overwatch</option><option>Dota 2</option></select>
+                        <select id="teamGame">
+                            <option>Valorant</option>
+                            <option>CS:GO</option>
+                            <option>League of Legends</option>
+                            <option>Overwatch</option>
+                            <option>Dota 2</option>
+                            <option>PUBG</option>
+                        </select>
                     </div>
                     <div><label>REGION</label><input type="text" id="teamRegion"></div>
                     <button class="btn-action" onclick="addTeam()">INITIALIZE TEAM</button>
@@ -240,8 +225,32 @@
                 <h3 style="color:var(--neon-yellow); margin-bottom:20px; font-family:'Orbitron'">RECRUIT PLAYER</h3>
                 <div class="form-grid">
                     <div><label>GAMERTAG</label><input type="text" id="playerTag"></div>
+                    
+                    <div><label>ROLE</label>
+                        <select id="playerRole">
+                            <option>Captain</option>
+                            <option>IGL</option>
+                            <option>Sniper</option>
+                            <option>Support</option>
+                            <option>Duelist</option>
+                            <option>Entry Fragger</option>
+                            <option>Lurker</option>
+                            <option>Coach</option>
+                        </select>
+                    </div>
+
+                    <div><label>GAME PLAYED</label>
+                        <select id="playerGame">
+                            <option>Valorant</option>
+                            <option>CS:GO</option>
+                            <option>League of Legends</option>
+                            <option>Overwatch</option>
+                            <option>Dota 2</option>
+                            <option>PUBG</option>
+                        </select>
+                    </div>
+
                     <div><label>TEAM ID</label><input type="text" id="playerTeamId"></div>
-                    <div><label>GAME</label><input type="text" id="playerGame" value="Valorant"></div>
                     <div><label>KILLS</label><input type="number" id="playerKills"></div>
                     <div><label>ASSISTS</label><input type="number" id="playerAssists"></div>
                     <button class="btn-action" onclick="addPlayer()">SIGN PLAYER</button>
@@ -254,14 +263,29 @@
             <div class="panel">
                 <h3 style="color:var(--neon-yellow); margin-bottom:20px; font-family:'Orbitron'">LOG MATCH RESULT</h3>
                 <div class="form-grid">
+                    <div><label>GAME</label>
+                        <select id="matchGame">
+                            <option>Valorant</option>
+                            <option>CS:GO</option>
+                            <option>League of Legends</option>
+                            <option>Overwatch</option>
+                            <option>Dota 2</option>
+                            <option>PUBG</option>
+                        </select>
+                    </div>
+                    <div><label>ROUND</label>
+                        <select id="matchRound">
+                            <option>Group Stage</option>
+                            <option>Quarterfinal</option>
+                            <option>Semifinal</option>
+                            <option>Grand Final</option>
+                        </select>
+                    </div>
                     <div><label>TEAM A ID</label><input type="text" id="teamAId"></div>
                     <div><label>TEAM B ID</label><input type="text" id="teamBId"></div>
                     <div><label>SCORE A</label><input type="number" id="scoreA"></div>
                     <div><label>SCORE B</label><input type="number" id="scoreB"></div>
                     <div><label>WINNER ID</label><input type="text" id="winnerId"></div>
-                    <div><label>ROUND</label>
-                        <select id="matchRound"><option>Group Stage</option><option>Quarterfinal</option><option>Semifinal</option><option>Grand Final</option></select>
-                    </div>
                     <button class="btn-action" onclick="addMatch()">SUBMIT LOGS</button>
                 </div>
             </div>
@@ -273,6 +297,18 @@
                 <h3 style="color:var(--neon-yellow); margin-bottom:20px; font-family:'Orbitron'">AUTHORIZE OFFICIAL</h3>
                 <div class="form-grid">
                     <div><label>REFEREE NAME</label><input type="text" id="refName"></div>
+                    
+                    <div><label>SPECIALIZATION</label>
+                        <select id="refGame">
+                            <option>Valorant</option>
+                            <option>CS:GO</option>
+                            <option>League of Legends</option>
+                            <option>Overwatch</option>
+                            <option>Dota 2</option>
+                            <option>PUBG</option>
+                        </select>
+                    </div>
+
                     <div><label>EXPERIENCE</label><input type="number" id="refExp"></div>
                     <div><label>MATCHES MANAGED</label><input type="number" id="refCount"></div>
                     <button class="btn-action" onclick="addReferee()">ISSUE LICENSE</button>
@@ -333,27 +369,14 @@
     </div>
 
     <script>
-        // Check if running locally or on the web
-const API = window.location.hostname === 'localhost'
-    ? 'http://localhost:3000/api'
-    : 'https://arenax-tj58.onrender.com/api';
+        const API = window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : 'https://arena-x-backend.onrender.com/api';
 
-        // --- TACTICAL CROSSHAIR LOGIC ---
+        // --- CURSOR LOGIC ---
         const cursor = document.getElementById('crosshair-cursor');
-        let mouseX = window.innerWidth / 2;
-        let mouseY = window.innerHeight / 2;
-        let cursorX = window.innerWidth / 2;
-        let cursorY = window.innerHeight / 2;
-
-        document.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-        });
-
+        let mouseX = window.innerWidth/2, mouseY = window.innerHeight/2, cursorX = mouseX, cursorY = mouseY;
+        document.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
         function animateCrosshair() {
-            cursorX += (mouseX - cursorX) * 0.2;
-            cursorY += (mouseY - cursorY) * 0.2;
-            // -20 to offset half the 40px width
+            cursorX += (mouseX - cursorX) * 0.2; cursorY += (mouseY - cursorY) * 0.2;
             cursor.style.transform = `translate(${cursorX - 20}px, ${cursorY - 20}px)`;
             requestAnimationFrame(animateCrosshair);
         }
@@ -391,36 +414,21 @@ const API = window.location.hostname === 'localhost'
             document.getElementById('teamsList').innerHTML = teams.map(t => `
                 <div class="card" style="border-left-color: ${t.wins > 8 ? 'var(--neon-yellow)' : 'var(--neon-cyan)'}">
                     <h4>${t.teamName}</h4>
-                    
-                    <div class="stat-row">
-                        <span class="stat-label">GAME</span> 
-                        <span class="stat-value" style="color:var(--neon-green)">${t.gameName}</span>
-                    </div>
-                    
-                    <div class="stat-row">
-                        <span class="stat-label">REGION</span> 
-                        <span class="stat-value">${t.region}</span>
-                    </div>
-                    
-                    <div class="stat-row">
-                        <span class="stat-label">WINS</span> 
-                        <span class="stat-value" style="color:var(--neon-yellow)">${t.wins || 0}</span>
-                    </div>
-
-                    <div style="margin-top:15px; font-size:0.7em; color:#888; font-family:monospace; user-select: all; cursor: text; border-top:1px solid rgba(255,255,255,0.1); padding-top:5px;">
-                        ID: ${t._id}
-                    </div>
-
+                    <div class="stat-row"><span class="stat-label">GAME</span> <span class="stat-value" style="color:var(--neon-green)">${t.gameName}</span></div>
+                    <div class="stat-row"><span class="stat-label">REGION</span> <span class="stat-value">${t.region}</span></div>
+                    <div class="stat-row"><span class="stat-label">WINS</span> <span class="stat-value" style="color:var(--neon-yellow)">${t.wins || 0}</span></div>
+                    <div style="margin-top:15px; font-size:0.7em; color:#888; font-family:monospace; user-select: all; cursor: text; border-top:1px solid rgba(255,255,255,0.1); padding-top:5px;">ID: ${t._id}</div>
                     <button class="btn-delete" onclick="deleteItem('teams', '${t._id}')">DISBAND</button>
                 </div>`).join('');
         }
 
-        // --- PLAYERS ---
+        // --- PLAYERS (UPDATED: Reads from Dropdowns) ---
         async function addPlayer() {
             await postData('/players', {
                 gamertag: document.getElementById('playerTag').value,
+                role: document.getElementById('playerRole').value, // New Field
+                gameName: document.getElementById('playerGame').value, // New Field
                 teamId: document.getElementById('playerTeamId').value,
-                gameName: document.getElementById('playerGame').value,
                 kills: document.getElementById('playerKills').value,
                 assists: document.getElementById('playerAssists').value
             }); loadPlayers();
@@ -430,19 +438,23 @@ const API = window.location.hostname === 'localhost'
             document.getElementById('playersList').innerHTML = players.map(p => `
                 <div class="card">
                     <h4>${p.gamertag}</h4>
-                    <div class="stat-row"><span class="stat-label">KILLS</span> <span class="stat-value" style="color:var(--neon-red)">${p.kills || p.totalKills || 0}</span></div>
-                    <div class="stat-row"><span class="stat-label">ASSISTS</span> <span class="stat-value" style="color:var(--neon-green)">${p.assists || 0}</span></div>
+                    <div class="stat-row"><span class="stat-label">ROLE</span> <span class="stat-value" style="color:var(--neon-yellow)">${p.role || 'Player'}</span></div>
+                    <div class="stat-row"><span class="stat-label">GAME</span> <span class="stat-value" style="color:var(--neon-green)">${p.gameName}</span></div>
+                    <div class="stat-row"><span class="stat-label">K/A</span> <span class="stat-value" style="color:var(--neon-red)">${p.kills||0}/${p.assists||0}</span></div>
                     <div style="margin-top:10px; font-size:0.7em; color:#555;">ID: ${p._id}</div>
                     <button class="btn-delete" onclick="deleteItem('players', '${p._id}')">RELEASE</button>
                 </div>`).join('');
         }
 
-        // --- MATCHES ---
+        // --- MATCHES (UPDATED: Reads from Dropdown) ---
         async function addMatch() {
             await postData('/matches', {
-                gameName: 'Valorant', round: document.getElementById('matchRound').value,
-                teamAId: document.getElementById('teamAId').value, teamBId: document.getElementById('teamBId').value,
-                scoreA: document.getElementById('scoreA').value, scoreB: document.getElementById('scoreB').value,
+                gameName: document.getElementById('matchGame').value, // New Field
+                round: document.getElementById('matchRound').value,
+                teamAId: document.getElementById('teamAId').value,
+                teamBId: document.getElementById('teamBId').value,
+                scoreA: document.getElementById('scoreA').value,
+                scoreB: document.getElementById('scoreB').value,
                 winnerId: document.getElementById('winnerId').value
             }); loadMatches();
         }
@@ -451,6 +463,7 @@ const API = window.location.hostname === 'localhost'
             document.getElementById('matchesList').innerHTML = matches.map(m => `
                 <div class="card">
                     <h4>${m.round}</h4>
+                    <div class="stat-row"><span class="stat-label">GAME</span> <span class="stat-value" style="color:var(--neon-green)">${m.gameName}</span></div>
                     <div class="stat-row"><span class="stat-label">SCORE</span> <span class="stat-value">${m.scoreA} - ${m.scoreB}</span></div>
                     <div class="stat-row"><span class="stat-label">WINNER</span> <span class="stat-value" style="color:var(--neon-cyan)">${m.winnerId ? 'DECIDED' : 'DRAW'}</span></div>
                     <div style="margin-top:10px; font-size:0.7em; color:#555;">ID: ${m._id}</div>
@@ -458,24 +471,41 @@ const API = window.location.hostname === 'localhost'
                 </div>`).join('');
         }
 
-        // --- REFS & AWARDS ---
+        // --- REFEREES (UPDATED: Reads from Dropdown) ---
         async function addReferee() {
-            await postData('/referees', { refereeName: document.getElementById('refName').value, experience: document.getElementById('refExp').value, matchesManaged: document.getElementById('refCount').value }); loadReferees();
+            await postData('/referees', {
+                refereeName: document.getElementById('refName').value,
+                gameName: document.getElementById('refGame').value, // New Field
+                experience: document.getElementById('refExp').value,
+                matchesManaged: document.getElementById('refCount').value
+            }); loadReferees();
         }
         async function loadReferees() {
             const refs = await getData('/referees');
             document.getElementById('refList').innerHTML = refs.map(r => `
-                <div class="card"><h4>${r.refereeName || r.name}</h4><div class="stat-row"><span class="stat-label">EXP</span><span class="stat-value">${r.experience} YRS</span></div><div class="stat-row"><span class="stat-label">MATCHES</span><span class="stat-value">${r.matchesManaged}</span></div></div>`).join('');
+                <div class="card">
+                    <h4>${r.refereeName || r.name}</h4>
+                    <div class="stat-row"><span class="stat-label">SPECIALTY</span> <span class="stat-value" style="color:var(--neon-green)">${r.gameName || 'All'}</span></div>
+                    <div class="stat-row"><span class="stat-label">EXP</span> <span class="stat-value">${r.experience} YRS</span></div>
+                    <div style="margin-top:15px; font-size:0.7em; color:#555;">ID: ${r._id}</div>
+                </div>`).join('');
         }
+
+        // --- AWARDS ---
         async function addAward() {
-            await postData('/awards', { title: document.getElementById('awardTitle').value, category: document.getElementById('awardCategory').value, matchId: document.getElementById('awardMatchId').value, playerId: document.getElementById('awardPlayerId').value }); loadAwards();
+            await postData('/awards', {
+                title: document.getElementById('awardTitle').value,
+                category: document.getElementById('awardCategory').value,
+                matchId: document.getElementById('awardMatchId').value,
+                playerId: document.getElementById('awardPlayerId').value
+            }); loadAwards();
         }
         async function loadAwards() {
             const awards = await getData('/awards');
             document.getElementById('awardsList').innerHTML = awards.map(a => `<div class="card"><h4>${a.title}</h4><div class="stat-row"><span class="stat-label">CAT</span><span class="stat-value" style="color:var(--neon-green)">${a.category}</span></div><div style="font-size:0.7em;color:#555;">PID: ${a.playerId}</div><button class="btn-delete" onclick="deleteItem('awards', '${a._id}')">REVOKE</button></div>`).join('');
         }
 
-        // --- ANALYTICS ENGINE ---
+        // --- ANALYTICS ENGINE (Fixed) ---
         async function runQuery(q) {
             const term = document.getElementById('terminalOutput');
             term.innerHTML = `<div class="terminal-prompt">> EXECUTING QUERY: ${q.toUpperCase()}...</div><div class="terminal-prompt">> FETCHING DATA_PACKETS...</div>`;
@@ -513,25 +543,3 @@ const API = window.location.hostname === 'localhost'
     </script>
 </body>
 </html>
-    <style>
-        :root {
-            --neon-red: #ff005c;
-            --neon-cyan: #00f3ff;
-            --neon-yellow: #ffdd00;
-            --neon-green: #00ff99;
-            --panel-bg: rgba(0, 0, 0, 0.5);
-        }
-        body {
-            margin: 0; padding: 0; background: #000; color: white; overflow-x: hidden;
-            background-image: radial-gradient(circle at center, #111 0%, #000 80%);
-        }
-
-        /* --- BACKGROUND ANIMATIONS --- */
-        .bg-stars {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(ellipse at center, #222 0%, transparent 70%), url('https://www.transparenttextures.com/patterns/stardust.png');
-            background-size: cover, auto; z-index: -4; opacity: 0.1; pointer-events: none; 
-        }
-
-        .bg-grid {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
