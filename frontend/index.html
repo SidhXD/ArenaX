@@ -391,6 +391,7 @@ const API = window.location.hostname === 'localhost'
             document.getElementById('teamsList').innerHTML = teams.map(t => `
                 <div class="card" style="border-left-color: ${t.wins > 8 ? 'var(--neon-yellow)' : 'var(--neon-cyan)'}">
                     <h4>${t.teamName}</h4>
+                    <div class="stat-row"><span class="stat-label">GAME</span> <span class="stat-value" style="color:var(--neon-green)">${t.gameName}</span></div>
                     <div class="stat-row"><span class="stat-label">REGION</span> <span class="stat-value">${t.region}</span></div>
                     <div class="stat-row"><span class="stat-label">WINS</span> <span class="stat-value" style="color:var(--neon-yellow)">${t.wins || 0}</span></div>
                     <button class="btn-delete" onclick="deleteItem('teams', '${t._id}')">DISBAND</button>

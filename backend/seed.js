@@ -1,7 +1,7 @@
 const { MongoClient, ObjectId } = require('mongodb');
 
 // Connection Config
-const uri = 'mongodb+srv://admin:test123@cluster0.u3wdx27.mongodb.net/?appName=Cluster0';
+const uri = 'mongodb://localhost:27017';
 const dbName = 'esportsDB';
 
 async function seedDatabase() {
