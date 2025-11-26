@@ -3,8 +3,12 @@ const { MongoClient, ObjectId } = require('mongodb');
 const cors = require('cors');
 
 const app = express();
-const PORT = 3000;
-const MONGO_URI = 'mongodb://localhost:27017';
+
+// 1. USE RENDER'S PORT (Critical Fix)
+const PORT = process.env.PORT || 3000;
+
+// 2. USE RENDER'S DATABASE URL (Critical Fix)
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017';
 const DB_NAME = 'esportsDB';
 
 app.use(cors());
@@ -14,14 +18,27 @@ let db;
 
 async function startServer() {
     try {
+        console.log('🟡 Connecting to MongoDB...');
+        console.log(`   (URI Length: ${MONGO_URI.length})`); // Debug: check if env var exists
+
         const client = await MongoClient.connect(MONGO_URI);
         db = client.db(DB_NAME);
+        
         console.log(`✅ ARENA X SERVER ONLINE: ${DB_NAME}`);
-        app.listen(PORT, () => console.log(`🚀 SYSTEM READY ON PORT ${PORT}`));
-    } catch (err) { console.error('❌ SYSTEM FAILURE:', err); }
-}
-startServer();
+        
+        // 3. START SERVER ONLY AFTER DB CONNECTS
+        app.listen(PORT, '0.0.0.0', () => {
+            console.log(`🚀 SYSTEM READY ON PORT ${PORT}`);
+        });
 
+    } catch (err) {
+        console.error('❌ CRITICAL SYSTEM FAILURE:', err);
+        // Keep the process alive so you can read the logs in Render
+        process.exit(1); 
+    }
+}
+
+startServer();
 // --- CRUD ROUTES ---
 
 // TEAMS
