@@ -132,57 +132,100 @@ app.delete('/api/awards/:id', async (req, res) => {
 });
 
 // --- QUERIES ---
+// --- OPTIMIZED QUERIES (Clean Data, No IDs) ---
+
+// 1. Highest Kills (Now shows Team Name instead of ID)
 app.get('/api/queries/highestKills', async (req, res) => {
-    res.json(await db.collection('players').find().sort({ kills: -1 }).limit(5).toArray());
+    res.json(await db.collection('players').aggregate([
+        { $sort: { kills: -1 } },
+        { $limit: 5 },
+        { $lookup: { from: 'teams', localField: 'teamId', foreignField: '_id', as: 't' } },
+        { $unwind: { path: '$t', preserveNullAndEmptyArrays: true } },
+        { $project: { _id: 0, Rank: { $literal: 'ELITE' }, Player: '$gamertag', Team: { $ifNull: ['$t.teamName', 'Free Agent'] }, Kills: '$kills', Role: '$role' } }
+    ]).toArray());
 });
+
+// 2. Semifinals (Cleaned up)
 app.get('/api/queries/semifinals', async (req, res) => {
     res.json(await db.collection('matches').aggregate([
         { $match: { round: 'Semifinal' } },
-        { $lookup: { from: 'teams', localField: 'teamAId', foreignField: '_id', as: 'TeamA' } },
-        { $unwind: '$TeamA' },
-        { $project: { TeamName: '$TeamA.teamName', Round: 'Semifinal', Game: '$gameName' } }
+        { $lookup: { from: 'teams', localField: 'teamAId', foreignField: '_id', as: 'tA' } },
+        { $lookup: { from: 'teams', localField: 'teamBId', foreignField: '_id', as: 'tB' } },
+        { $project: { _id: 0, Game: '$gameName', Round: '$round', Matchup: { $concat: [{ $arrayElemAt: ['$tA.teamName', 0] }, " vs ", { $arrayElemAt: ['$tB.teamName', 0] }] } } }
     ]).toArray());
 });
+
+// 3. Active Referees (Clean format)
 app.get('/api/queries/activeReferees', async (req, res) => {
-    res.json(await db.collection('referees').find({ matchesManaged: { $gt: 10 } }).toArray());
+    res.json(await db.collection('referees').aggregate([
+        { $match: { matchesManaged: { $gt: 10 } } },
+        { $project: { _id: 0, Official: '$refereeName', Specialty: '$gameName', Matches: '$matchesManaged', Exp: { $concat: [{ $toString: '$experience' }, " Years"] } } }
+    ]).toArray());
 });
+
+// 4. Multi-Game Players (Formatted list)
 app.get('/api/queries/multiGamePlayers', async (req, res) => {
     res.json(await db.collection('players').aggregate([
         { $group: { _id: "$gamertag", games: { $addToSet: "$gameName" }, count: { $sum: 1 } } },
-        { $match: { count: { $gt: 1 } } }
+        { $match: { count: { $gt: 1 } } },
+        { $project: { _id: 0, Player: '$_id', Games_Played: '$games' } }
     ]).toArray());
 });
+
+// 5. Match MVPs (Clean names)
 app.get('/api/queries/matchMVPs', async (req, res) => {
     res.json(await db.collection('awards').aggregate([
         { $match: { category: 'MVP' } },
         { $lookup: { from: 'players', localField: 'playerId', foreignField: '_id', as: 'p' } },
         { $unwind: '$p' },
-        { $project: { Award: '$title', Gamertag: '$p.gamertag', MatchId: '$matchId' } }
+        { $project: { _id: 0, Title: '$title', Winner: '$p.gamertag', Role: '$p.role', Game: '$p.gameName' } }
     ]).toArray());
 });
+
+// 6. Top 3 Teams (No IDs)
 app.get('/api/queries/top3Teams', async (req, res) => {
-    res.json(await db.collection('teams').find().sort({ totalScore: -1 }).limit(3).toArray());
+    res.json(await db.collection('teams').aggregate([
+        { $sort: { totalScore: -1 } },
+        { $limit: 3 },
+        { $project: { _id: 0, Rank: { $literal: 'TOP 3' }, Team: '$teamName', Region: '$region', Wins: '$wins', Score: '$totalScore' } }
+    ]).toArray());
 });
+
+// 7. Zero Win Teams (No IDs)
 app.get('/api/queries/zeroWinTeams', async (req, res) => {
-    res.json(await db.collection('teams').find({ wins: 0 }).toArray());
+    res.json(await db.collection('teams').aggregate([
+        { $match: { wins: 0 } },
+        { $project: { _id: 0, Status: { $literal: 'ELIMINATED' }, Team: '$teamName', Game: '$gameName', Region: '$region' } }
+    ]).toArray());
 });
+
+// 8. Draw Matches (Clean format)
 app.get('/api/queries/drawMatches', async (req, res) => {
-    res.json(await db.collection('matches').find({ winnerId: null }).toArray());
+    res.json(await db.collection('matches').aggregate([
+        { $match: { winnerId: null } },
+        { $lookup: { from: 'teams', localField: 'teamAId', foreignField: '_id', as: 'tA' } },
+        { $lookup: { from: 'teams', localField: 'teamBId', foreignField: '_id', as: 'tB' } },
+        { $project: { _id: 0, Game: '$gameName', Round: '$round', Result: { $concat: ["DRAW (", { $toString: '$scoreA' }, "-", { $toString: '$scoreB' }, ")"] }, Teams: { $concat: [{ $arrayElemAt: ['$tA.teamName', 0] }, " vs ", { $arrayElemAt: ['$tB.teamName', 0] }] } } }
+    ]).toArray());
 });
+
+// 9. Avg Team Score
 app.get('/api/queries/avgTeamScore', async (req, res) => {
     res.json(await db.collection('matches').aggregate([
         { $group: { _id: "$teamAId", avgScore: { $avg: "$scoreA" } } },
         { $lookup: { from: 'teams', localField: '_id', foreignField: '_id', as: 't' } },
         { $unwind: '$t' },
-        { $project: { Team: '$t.teamName', AvgScore: { $round: ["$avgScore", 1] } } }
+        { $project: { _id: 0, Team: '$t.teamName', Avg_Score: { $round: ["$avgScore", 1] } } }
     ]).toArray());
 });
+
+// 10. Dual Winners
 app.get('/api/queries/dualWinners', async (req, res) => {
     res.json(await db.collection('awards').aggregate([
         { $group: { _id: "$playerId", categories: { $addToSet: "$category" } } },
         { $match: { categories: { $all: ["MVP", "Top Scorer"] } } },
         { $lookup: { from: 'players', localField: '_id', foreignField: '_id', as: 'p' } },
         { $unwind: '$p' },
-        { $project: { Gamertag: '$p.gamertag', Awards: '$categories' } }
+        { $project: { _id: 0, Legend_Status: { $literal: 'DUAL WINNER' }, Player: '$p.gamertag', Game: '$p.gameName', Achievements: '$categories' } }
     ]).toArray());
 });

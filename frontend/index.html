@@ -115,41 +115,81 @@
         .btn-delete:hover { background: var(--neon-red); color: white; }
 
         /* --- ANALYTICS TERMINAL --- */
+        /* --- BEAUTIFIED ANALYTICS HUD --- */
         .analytics-layout { display: grid; grid-template-columns: 350px 1fr; gap: 30px; }
         .query-sidebar { display: flex; flex-direction: column; gap: 15px; }
         
         .query-group-title {
-            color: var(--neon-yellow); font-family: 'Orbitron'; font-size: 0.9em; margin: 15px 0 5px 0; border-bottom: 1px solid #333; padding-bottom: 5px;
+            color: var(--neon-yellow); font-family: 'Orbitron'; font-size: 0.9em; margin: 20px 0 10px 0; 
+            border-bottom: 1px solid var(--neon-yellow); padding-bottom: 5px; letter-spacing: 2px;
         }
         
         .query-card {
-            background: rgba(0, 243, 255, 0.05); border: 1px solid var(--neon-cyan); padding: 15px;
-            cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
-            display: flex; align-items: center; justify-content: space-between;
-            z-index: 20;
+            background: linear-gradient(90deg, rgba(0, 243, 255, 0.05) 0%, transparent 100%);
+            border-left: 3px solid var(--neon-cyan); padding: 15px;
+            cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden;
+            display: flex; align-items: center; justify-content: space-between; z-index: 20;
         }
-        .query-card:hover { background: var(--neon-cyan); color: black; box-shadow: 0 0 15px var(--neon-cyan); }
-        .query-card span { font-family: 'Orbitron'; font-size: 0.8em; font-weight: bold; }
-        .query-card::after { content: '>'; opacity: 0; transform: translateX(-10px); transition: 0.2s; font-weight: bold; }
-        .query-card:hover::after { opacity: 1; transform: translateX(0); }
+        .query-card:hover { 
+            background: linear-gradient(90deg, rgba(0, 243, 255, 0.2) 0%, transparent 100%);
+            border-left: 3px solid var(--neon-red); padding-left: 25px; text-shadow: 0 0 8px var(--neon-cyan);
+        }
+        .query-card span { font-family: 'Rajdhani'; font-size: 1.1em; font-weight: bold; text-transform: uppercase; }
 
+        /* THE TERMINAL WINDOW */
         .terminal-window {
-            background: #000; border: 2px solid #333; border-radius: 5px; height: 100%; min-height: 500px;
-            padding: 0; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            background: rgba(5, 5, 16, 0.95);
+            border: 1px solid var(--neon-green);
+            border-radius: 5px; height: 100%; min-height: 600px;
+            padding: 0; display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 0 40px rgba(0, 255, 153, 0.1), inset 0 0 100px rgba(0,0,0,0.8);
+            position: relative;
         }
+        
+        /* Scanline Effect */
+        .terminal-window::before {
+            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2; background-size: 100% 2px, 3px 100%; pointer-events: none;
+        }
+
         .terminal-header {
-            background: #222; padding: 10px 20px; border-bottom: 1px solid #333;
-            display: flex; justify-content: space-between; align-items: center; color: #888; font-family: 'Share Tech Mono';
+            background: rgba(0, 255, 153, 0.1); padding: 15px 25px; border-bottom: 1px solid var(--neon-green);
+            display: flex; justify-content: space-between; align-items: center; color: var(--neon-green);
+            font-family: 'Orbitron'; letter-spacing: 2px; font-size: 0.9em;
         }
         .terminal-body {
-            padding: 20px; font-family: 'Share Tech Mono', monospace; color: var(--neon-green); flex-grow: 1; overflow-y: auto;
+            padding: 30px; font-family: 'Share Tech Mono', monospace; color: white; 
+            flex-grow: 1; overflow-y: auto; z-index: 3;
         }
-        .terminal-prompt { color: var(--neon-cyan); margin-bottom: 10px; }
+        .terminal-prompt { color: var(--neon-cyan); margin-bottom: 15px; font-size: 1.1em; }
 
-        .data-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .data-table th { text-align: left; border-bottom: 1px solid var(--neon-green); color: var(--neon-yellow); padding: 10px; text-transform: uppercase; }
-        .data-table td { border-bottom: 1px solid #222; padding: 10px; color: #ddd; }
-        .data-table tr:hover td { background: rgba(0, 255, 153, 0.1); color: white; }
+        /* NEW TABLE STYLES */
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; border: 1px solid #333; }
+        
+        .data-table th { 
+            text-align: left; 
+            background: rgba(0, 255, 153, 0.2); 
+            color: var(--neon-green); 
+            padding: 15px; 
+            text-transform: uppercase; 
+            font-family: 'Orbitron'; 
+            letter-spacing: 1px;
+            border-bottom: 2px solid var(--neon-green);
+        }
+        
+        .data-table td { 
+            border-bottom: 1px solid rgba(255,255,255,0.1); 
+            padding: 15px; 
+            color: #ddd; 
+            font-size: 1.1em;
+        }
+        
+        .data-table tr:hover td { 
+            background: rgba(0, 243, 255, 0.1); 
+            color: white; 
+            text-shadow: 0 0 5px white;
+        }
 
         /* CROSSHAIR */
         #crosshair-cursor { position: fixed; top: 0; left: 0; width: 40px; height: 40px; z-index: 9999; pointer-events: none !important; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; mix-blend-mode: screen; }
