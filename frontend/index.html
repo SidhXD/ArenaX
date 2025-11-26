@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARENA X | Ultimate Esports Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-red: #ff0055;
+            --neon-cyan: #00f3ff;
+            --neon-yellow: #ffee00;
+            --neon-green: #00ff99;
+            --bg-dark: #050510;
+            --panel-bg: rgba(10, 15, 30, 0.7);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* --- BACKGROUND ANIMATION --- */
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: var(--bg-dark);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            /* Optional: Hide default cursor if using custom one */
+            /* cursor: none; */ 
+        }
+
+        .bg-grid {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: linear-gradient(rgba(0, 243, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            transform: perspective(500px) rotateX(60deg) translateY(-100px) scale(2);
+            animation: moveGrid 5s linear infinite; 
+            z-index: -3; 
+            opacity: 0.2; 
+            pointer-events: none; /* CRITICAL: Ensures background doesn't block clicks */
+        }
+
+        .spotlight {
+            position: fixed; width: 800px; height: 800px; border-radius: 50%;
+            filter: blur(100px); opacity: 0.4; 
+            z-index: -1; 
+            pointer-events: none; /* CRITICAL */
+            mix-blend-mode: screen;
+        }
+        .spot-tl { top: -400px; left: -400px; background: radial-gradient(circle, var(--neon-red), transparent 70%); animation: cycle 10s infinite; }
+        .spot-tr { top: -400px; right: -400px; background: radial-gradient(circle, var(--neon-cyan), transparent 70%); animation: cycle 12s infinite reverse; }
+        .spot-bl { bottom: -400px; left: -400px; background: radial-gradient(circle, var(--neon-yellow), transparent 70%); animation: cycle 15s infinite; }
+        .spot-br { bottom: -400px; right: -400px; background: radial-gradient(circle, #bd00ff, transparent 70%); animation: cycle 18s infinite reverse; }
+
+        /* --- TACTICAL CROSSHAIR (FIXED) --- */
+        #crosshair-cursor {
+            position: fixed;
+            top: 0; left: 0;
+            width: 40px; height: 40px;
+            z-index: 9999; /* Highest layer */
+            pointer-events: none !important; /* !!! FIX: THIS ALLOWS CLICKS TO PASS THROUGH !!! */
+            transform: translate(-50%, -50%);
+            display: flex; align-items: center; justify-content: center;
+            mix-blend-mode: screen;
+        }
+        .ch-dot {
+            position: absolute; width: 4px; height: 4px; background-color: var(--neon-red); border-radius: 50%; box-shadow: 0 0 8px var(--neon-red);
+        }
+        .ch-spin {
+            animation: rotateReticle 4s linear infinite; opacity: 0.9;
+        }
+
+        @keyframes rotateReticle { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes moveGrid { 0% { background-position: 0 0; } 100% { background-position: 0 50px; } }
+        @keyframes cycle { 0%, 100% { filter: blur(100px) hue-rotate(0deg); } 50% { filter: blur(100px) hue-rotate(60deg); } }
+        @keyframes logoPulse { 0% { box-shadow: 0 0 20px var(--neon-red); } 50% { box-shadow: 0 0 50px var(--neon-red); } 100% { box-shadow: 0 0 20px var(--neon-red); } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- LAYOUT --- */
+        /* FIX: Increased z-index to 10 to sit ABOVE background animations */
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; position: relative; z-index: 10; }
+
+        header { display: flex; align-items: center; justify-content: center; gap: 30px; padding: 60px 20px; }
+        .logo-wrapper {
+            width: 100px; height: 100px; background: rgba(0,0,0,0.6); border: 4px solid var(--neon-red); border-radius: 15px;
+            display: flex; align-items: center; justify-content: center; transform: rotate(45deg); animation: logoPulse 3s infinite, float 4s ease-in-out infinite;
+        }
+        .logo-text { font-family: 'Orbitron'; font-size: 5em; font-weight: 900; color: white; transform: rotate(-45deg); }
+        h1 { font-family: 'Orbitron'; font-size: 4em; color: white; text-shadow: 0 0 10px var(--neon-cyan); line-height: 1; }
+        h1 span { color: var(--neon-cyan); }
+        .subtitle { color: var(--neon-yellow); letter-spacing: 5px; font-weight: bold; }
+
+        /* --- TABS --- */
+        .tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 40px; flex-wrap: wrap; position: relative; z-index: 20; }
+        .tab-btn {
+            background: rgba(0, 243, 255, 0.05); border: 1px solid var(--neon-cyan); color: var(--neon-cyan);
+            padding: 12px 25px; font-family: 'Orbitron'; font-weight: bold; cursor: pointer; transition: 0.3s;
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+            position: relative; z-index: 20; /* Ensure buttons are clickable */
+        }
+        .tab-btn:hover { background: var(--neon-cyan); color: black; box-shadow: 0 0 20px var(--neon-cyan); }
+        .tab-btn.active { background: var(--neon-red); border-color: var(--neon-red); color: white; box-shadow: 0 0 25px var(--neon-red); }
+        
+        .tab-content { display: none; animation: fadeIn 0.4s; position: relative; z-index: 15; }
+        .tab-content.active { display: block; }
+
+        /* --- FORMS & CARDS --- */
+        .panel { background: var(--panel-bg); border: 1px solid rgba(255,255,255,0.1); border-top: 2px solid var(--neon-cyan); padding: 30px; border-radius: 10px; margin-bottom: 30px; backdrop-filter: blur(10px); }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        
+        input, select {
+            width: 100%; background: rgba(0,0,0,0.3); border: 1px solid #333; padding: 12px; color: white; font-family: 'Rajdhani'; font-size: 1.1em; border-radius: 4px;
+        }
+        input:focus, select:focus { outline: none; border-color: var(--neon-cyan); box-shadow: 0 0 10px rgba(0, 243, 255, 0.2); }
+        label { color: var(--neon-cyan); font-weight: bold; font-size: 0.9em; margin-bottom: 5px; display: block; }
+        
+        .btn-action {
+            background: linear-gradient(45deg, var(--neon-yellow), #ffae00); color: black; border: none; padding: 12px; font-weight: 900;
+            width: 100%; margin-top: 22px; cursor: pointer; clip-path: polygon(0 0, 100% 0, 100% 80%, 95% 100%, 0 100%); transition: 0.3s;
+            position: relative; z-index: 20;
+        }
+        .btn-action:hover { box-shadow: 0 0 20px var(--neon-yellow); transform: translateY(-2px); }
+
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .card {
+            background: linear-gradient(160deg, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.4) 100%);
+            border: 1px solid rgba(255,255,255,0.05); border-left: 4px solid var(--neon-cyan); padding: 20px;
+            transition: 0.3s; position: relative;
+        }
+        .card:hover { transform: translateY(-5px); border-left-color: var(--neon-red); box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
+        .card h4 { font-family: 'Orbitron'; color: white; font-size: 1.3em; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
+        
+        .stat-row { display: flex; justify-content: space-between; margin: 8px 0; font-size: 1.05em; }
+        .stat-label { color: #888; font-size: 0.9em; }
+        .stat-value { color: var(--neon-cyan); font-weight: bold; }
+        
+        .btn-delete {
+            background: transparent; color: var(--neon-red); border: 1px solid var(--neon-red); padding: 8px; width: 100%;
+            margin-top: 15px; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 0.8em; transition: 0.3s;
+            position: relative; z-index: 20;
+        }
+        .btn-delete:hover { background: var(--neon-red); color: white; }
+
+        /* --- ANALYTICS TERMINAL --- */
+        .analytics-layout { display: grid; grid-template-columns: 350px 1fr; gap: 30px; }
+        .query-sidebar { display: flex; flex-direction: column; gap: 15px; }
+        
+        .query-group-title {
+            color: var(--neon-yellow); font-family: 'Orbitron'; font-size: 0.9em; margin: 15px 0 5px 0; border-bottom: 1px solid #333; padding-bottom: 5px;
+        }
+        
+        .query-card {
+            background: rgba(0, 243, 255, 0.05); border: 1px solid var(--neon-cyan); padding: 15px;
+            cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
+            display: flex; align-items: center; justify-content: space-between;
+            z-index: 20;
+        }
+        .query-card:hover { background: var(--neon-cyan); color: black; box-shadow: 0 0 15px var(--neon-cyan); }
+        .query-card span { font-family: 'Orbitron'; font-size: 0.8em; font-weight: bold; }
+        .query-card::after { content: '>'; opacity: 0; transform: translateX(-10px); transition: 0.2s; font-weight: bold; }
+        .query-card:hover::after { opacity: 1; transform: translateX(0); }
+
+        .terminal-window {
+            background: #000; border: 2px solid #333; border-radius: 5px; height: 100%; min-height: 500px;
+            padding: 0; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+        .terminal-header {
+            background: #222; padding: 10px 20px; border-bottom: 1px solid #333;
+            display: flex; justify-content: space-between; align-items: center; color: #888; font-family: 'Share Tech Mono';
+        }
+        .terminal-body {
+            padding: 20px; font-family: 'Share Tech Mono', monospace; color: var(--neon-green); flex-grow: 1; overflow-y: auto;
+        }
+        .terminal-prompt { color: var(--neon-cyan); margin-bottom: 10px; }
+
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .data-table th { text-align: left; border-bottom: 1px solid var(--neon-green); color: var(--neon-yellow); padding: 10px; text-transform: uppercase; }
+        .data-table td { border-bottom: 1px solid #222; padding: 10px; color: #ddd; }
+        .data-table tr:hover td { background: rgba(0, 255, 153, 0.1); color: white; }
+
+        @media (max-width: 900px) { .analytics-layout { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <div class="bg-grid"></div>
+    <div class="bg-stars"></div>
+    <div class="spotlight spot-tl"></div><div class="spotlight spot-tr"></div>
+    <div class="spotlight spot-bl"></div><div class="spotlight spot-br"></div>
+
+    <div id="crosshair-cursor">
+        <svg class="ch-spin" viewBox="0 0 100 100" width="40" height="40">
+            <defs>
+                <filter id="glow"><feGaussianBlur stdDeviation="2" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+            <path d="M30,10 L10,10 L10,30 M70,10 L90,10 L90,30 M90,70 L90,90 L70,90 M30,90 L10,90 L10,70" fill="none" stroke="var(--neon-cyan)" stroke-width="4" filter="url(#glow)"/>
+            <path d="M50,20 L50,30 M50,70 L50,80 M20,50 L30,50 M70,50 L80,50" fill="none" stroke="var(--neon-red)" stroke-width="3"/>
+        </svg>
+        <div class="ch-dot"></div>
+    </div>
+
+    <div class="container">
+        <header>
+            <div class="logo-wrapper"><div class="logo-text">A</div></div>
+            <div class="header-text">
+                <h1>ARENA <span>X</span></h1>
+                <p class="subtitle">TOURNAMENT COMMAND CENTER</p>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('teams')">Teams</button>
+            <button class="tab-btn" onclick="switchTab('players')">Players</button>
+            <button class="tab-btn" onclick="switchTab('matches')">Matches</button>
+            <button class="tab-btn" onclick="switchTab('referees')">Referees</button>
+            <button class="tab-btn" onclick="switchTab('awards')">Awards</button>
+            <button class="tab-btn" onclick="switchTab('stats')">Analytics</button>
+        </div>
+
+        <div id="msgArea"></div>
+
+        <div id="teams" class="tab-content active">
+            <div class="panel">
+                <h3 style="color:var(--neon-yellow); margin-bottom:20px; font-family:'Orbitron'">REGISTER NEW SQUAD</h3>
+                <div class="form-grid">
+                    <div><label>TEAM NAME</label><input type="text" id="teamName"></div>
+                    <div><label>GAME</label>
+                        <select id="teamGame"><option>Valorant</option><option>CS:GO</option><option>League of Legends</option><option>Overwatch</option><option>Dota 2</option></select>
+                    </div>
+                    <div><label>REGION</label><input type="text" id="teamRegion"></div>
+                    <button class="btn-action" onclick="addTeam()">INITIALIZE TEAM</button>
+                </div>
+            </div>
+            <div id="teamsList" class="card-grid"></div>
+        </div>
+
+        <div id="players" class="tab-content">
+            <div class="panel">
+                <h3 style="color:var(--neon-yellow); margin-bottom:20px; font-family:'Orbitron'">RECRUIT PLAYER</h3>
+                <div class="form-grid">
+                    <div><label>GAMERTAG</label><input type="text" id="playerTag"></div>
+                    <div><label>TEAM ID</label><input type="text" id="playerTeamId"></div>
+                    <div><label>GAME</label><input type="text" id="playerGame" value="Valorant"></div>
+                    <div><label>KILLS</label><input type="number" id="playerKills"></div>
+                    <div><label>ASSISTS</label><input type="number" id="playerAssists"></div>
+                    <button class="btn-action" onclick="addPlayer()">SIGN PLAYER</button>
+                </div>
+            </div>
+            <div id="playersList" class="card-grid"></div>
+        </div>
+
+        <div id="matches" class="tab-content">
+            <div class="panel">
+                <h3 style="color:var(--neon-yellow); margin-bottom:20px; font-family:'Orbitron'">LOG MATCH RESULT</h3>
+                <div class="form-grid">
+                    <div><label>TEAM A ID</label><input type="text" id="teamAId"></div>
+                    <div><label>TEAM B ID</label><input type="text" id="teamBId"></div>
+                    <div><label>SCORE A</label><input type="number" id="scoreA"></div>
+                    <div><label>SCORE B</label><input type="number" id="scoreB"></div>
+                    <div><label>WINNER ID</label><input type="text" id="winnerId"></div>
+                    <div><label>ROUND</label>
+                        <select id="matchRound"><option>Group Stage</option><option>Quarterfinal</option><option>Semifinal</option><option>Grand Final</option></select>
+                    </div>
+                    <button class="btn-action" onclick="addMatch()">SUBMIT LOGS</button>
+                </div>
+            </div>
+            <div id="matchesList" class="card-grid"></div>
+        </div>
+
+        <div id="referees" class="tab-content">
+            <div class="panel">
+                <h3 style="color:var(--neon-yellow); margin-bottom:20px; font-family:'Orbitron'">AUTHORIZE OFFICIAL</h3>
+                <div class="form-grid">
+                    <div><label>REFEREE NAME</label><input type="text" id="refName"></div>
+                    <div><label>EXPERIENCE</label><input type="number" id="refExp"></div>
+                    <div><label>MATCHES MANAGED</label><input type="number" id="refCount"></div>
+                    <button class="btn-action" onclick="addReferee()">ISSUE LICENSE</button>
+                </div>
+            </div>
+            <div id="refList" class="card-grid"></div>
+        </div>
+
+        <div id="awards" class="tab-content">
+            <div class="panel">
+                <h3 style="color:var(--neon-yellow); margin-bottom:20px; font-family:'Orbitron'">GRANT ACCOLADE</h3>
+                <div class="form-grid">
+                    <div><label>AWARD TITLE</label><input type="text" id="awardTitle"></div>
+                    <div><label>CATEGORY</label><select id="awardCategory"><option value="MVP">MVP</option><option value="Top Scorer">Top Scorer</option></select></div>
+                    <div><label>MATCH ID</label><input type="text" id="awardMatchId"></div>
+                    <div><label>PLAYER ID</label><input type="text" id="awardPlayerId"></div>
+                    <button class="btn-action" onclick="addAward()">CONFER AWARD</button>
+                </div>
+            </div>
+            <div id="awardsList" class="card-grid"></div>
+        </div>
+
+        <div id="stats" class="tab-content">
+            <div class="analytics-layout">
+                <div class="query-sidebar">
+                    <h2 style="color:var(--neon-cyan); font-family:'Orbitron'">SYSTEM ANALYTICS</h2>
+                    
+                    <div class="query-group-title">PLAYER INTEL</div>
+                    <div class="query-card" onclick="runQuery('highestKills')"><span>1. HIGHEST KILLS</span></div>
+                    <div class="query-card" onclick="runQuery('multiGamePlayers')"><span>2. MULTI-GAME PLAYERS</span></div>
+                    <div class="query-card" onclick="runQuery('dualWinners')"><span>3. DUAL AWARD WINNERS</span></div>
+
+                    <div class="query-group-title">MATCH ANALYSIS</div>
+                    <div class="query-card" onclick="runQuery('semifinals')"><span>4. SEMIFINALS</span></div>
+                    <div class="query-card" onclick="runQuery('matchMVPs')"><span>5. MATCH MVPS</span></div>
+                    <div class="query-card" onclick="runQuery('drawMatches')"><span>6. DRAWN MATCHES</span></div>
+                    
+                    <div class="query-group-title">TEAM PERFORMANCE</div>
+                    <div class="query-card" onclick="runQuery('top3Teams')"><span>7. TOP 3 TEAMS</span></div>
+                    <div class="query-card" onclick="runQuery('zeroWinTeams')"><span>8. ZERO WIN TEAMS</span></div>
+                    <div class="query-card" onclick="runQuery('avgTeamScore')"><span>9. AVG TEAM SCORE</span></div>
+
+                    <div class="query-group-title">STAFF</div>
+                    <div class="query-card" onclick="runQuery('activeReferees')"><span>10. ELITE REFEREES</span></div>
+                </div>
+
+                <div class="terminal-window">
+                    <div class="terminal-header">
+                        <span>ARENA_X_TERMINAL_v2.0</span>
+                        <span style="color:#0f0">● ONLINE</span>
+                    </div>
+                    <div class="terminal-body" id="terminalOutput">
+                        <div class="terminal-prompt">> WAITING FOR QUERY INPUT..._</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = 'http://localhost:3000/api';
+
+        // --- TACTICAL CROSSHAIR LOGIC ---
+        const cursor = document.getElementById('crosshair-cursor');
+        let mouseX = window.innerWidth / 2;
+        let mouseY = window.innerHeight / 2;
+        let cursorX = window.innerWidth / 2;
+        let cursorY = window.innerHeight / 2;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        function animateCrosshair() {
+            cursorX += (mouseX - cursorX) * 0.2;
+            cursorY += (mouseY - cursorY) * 0.2;
+            // -20 to offset half the 40px width
+            cursor.style.transform = `translate(${cursorX - 20}px, ${cursorY - 20}px)`;
+            requestAnimationFrame(animateCrosshair);
+        }
+        animateCrosshair();
+
+        function switchTab(id) {
+            document.querySelectorAll('.tab-content').forEach(d => d.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.querySelector(`button[onclick="switchTab('${id}')"]`).classList.add('active');
+            if(id === 'teams') loadTeams();
+            if(id === 'players') loadPlayers();
+            if(id === 'matches') loadMatches();
+            if(id === 'referees') loadReferees();
+            if(id === 'awards') loadAwards();
+        }
+
+        function showMsg(txt, type) {
+            const d = document.getElementById('msgArea');
+            const color = type === 'error' ? 'var(--neon-red)' : 'var(--neon-cyan)';
+            d.innerHTML = `<div style="background:rgba(0,0,0,0.8); border:1px solid ${color}; color:${color}; padding:15px; margin-bottom:20px; text-align:center; font-weight:bold;">${txt}</div>`;
+            setTimeout(() => d.innerHTML = '', 4000);
+        }
+
+        // --- TEAMS ---
+        async function addTeam() {
+            await postData('/teams', {
+                teamName: document.getElementById('teamName').value,
+                gameName: document.getElementById('teamGame').value,
+                region: document.getElementById('teamRegion').value
+            }); loadTeams();
+        }
+        async function loadTeams() {
+            const teams = await getData('/teams');
+            document.getElementById('teamsList').innerHTML = teams.map(t => `
+                <div class="card" style="border-left-color: ${t.wins > 8 ? 'var(--neon-yellow)' : 'var(--neon-cyan)'}">
+                    <h4>${t.teamName}</h4>
+                    <div class="stat-row"><span class="stat-label">REGION</span> <span class="stat-value">${t.region}</span></div>
+                    <div class="stat-row"><span class="stat-label">WINS</span> <span class="stat-value" style="color:var(--neon-yellow)">${t.wins || 0}</span></div>
+                    <button class="btn-delete" onclick="deleteItem('teams', '${t._id}')">DISBAND</button>
+                </div>`).join('');
+        }
+
+        // --- PLAYERS ---
+        async function addPlayer() {
+            await postData('/players', {
+                gamertag: document.getElementById('playerTag').value,
+                teamId: document.getElementById('playerTeamId').value,
+                gameName: document.getElementById('playerGame').value,
+                kills: document.getElementById('playerKills').value,
+                assists: document.getElementById('playerAssists').value
+            }); loadPlayers();
+        }
+        async function loadPlayers() {
+            const players = await getData('/players');
+            document.getElementById('playersList').innerHTML = players.map(p => `
+                <div class="card">
+                    <h4>${p.gamertag}</h4>
+                    <div class="stat-row"><span class="stat-label">KILLS</span> <span class="stat-value" style="color:var(--neon-red)">${p.kills || p.totalKills || 0}</span></div>
+                    <div class="stat-row"><span class="stat-label">ASSISTS</span> <span class="stat-value" style="color:var(--neon-green)">${p.assists || 0}</span></div>
+                    <div style="margin-top:10px; font-size:0.7em; color:#555;">ID: ${p._id}</div>
+                    <button class="btn-delete" onclick="deleteItem('players', '${p._id}')">RELEASE</button>
+                </div>`).join('');
+        }
+
+        // --- MATCHES ---
+        async function addMatch() {
+            await postData('/matches', {
+                gameName: 'Valorant', round: document.getElementById('matchRound').value,
+                teamAId: document.getElementById('teamAId').value, teamBId: document.getElementById('teamBId').value,
+                scoreA: document.getElementById('scoreA').value, scoreB: document.getElementById('scoreB').value,
+                winnerId: document.getElementById('winnerId').value
+            }); loadMatches();
+        }
+        async function loadMatches() {
+            const matches = await getData('/matches');
+            document.getElementById('matchesList').innerHTML = matches.map(m => `
+                <div class="card">
+                    <h4>${m.round}</h4>
+                    <div class="stat-row"><span class="stat-label">SCORE</span> <span class="stat-value">${m.scoreA} - ${m.scoreB}</span></div>
+                    <div class="stat-row"><span class="stat-label">WINNER</span> <span class="stat-value" style="color:var(--neon-cyan)">${m.winnerId ? 'DECIDED' : 'DRAW'}</span></div>
+                    <div style="margin-top:10px; font-size:0.7em; color:#555;">ID: ${m._id}</div>
+                    <button class="btn-delete" onclick="deleteItem('matches', '${m._id}')">VOID</button>
+                </div>`).join('');
+        }
+
+        // --- REFS & AWARDS ---
+        async function addReferee() {
+            await postData('/referees', { refereeName: document.getElementById('refName').value, experience: document.getElementById('refExp').value, matchesManaged: document.getElementById('refCount').value }); loadReferees();
+        }
+        async function loadReferees() {
+            const refs = await getData('/referees');
+            document.getElementById('refList').innerHTML = refs.map(r => `
+                <div class="card"><h4>${r.refereeName || r.name}</h4><div class="stat-row"><span class="stat-label">EXP</span><span class="stat-value">${r.experience} YRS</span></div><div class="stat-row"><span class="stat-label">MATCHES</span><span class="stat-value">${r.matchesManaged}</span></div></div>`).join('');
+        }
+        async function addAward() {
+            await postData('/awards', { title: document.getElementById('awardTitle').value, category: document.getElementById('awardCategory').value, matchId: document.getElementById('awardMatchId').value, playerId: document.getElementById('awardPlayerId').value }); loadAwards();
+        }
+        async function loadAwards() {
+            const awards = await getData('/awards');
+            document.getElementById('awardsList').innerHTML = awards.map(a => `<div class="card"><h4>${a.title}</h4><div class="stat-row"><span class="stat-label">CAT</span><span class="stat-value" style="color:var(--neon-green)">${a.category}</span></div><div style="font-size:0.7em;color:#555;">PID: ${a.playerId}</div><button class="btn-delete" onclick="deleteItem('awards', '${a._id}')">REVOKE</button></div>`).join('');
+        }
+
+        // --- ANALYTICS ENGINE ---
+        async function runQuery(q) {
+            const term = document.getElementById('terminalOutput');
+            term.innerHTML = `<div class="terminal-prompt">> EXECUTING QUERY: ${q.toUpperCase()}...</div><div class="terminal-prompt">> FETCHING DATA_PACKETS...</div>`;
+            try {
+                const data = await getData(`/queries/${q}`);
+                if(data.length === 0) {
+                    term.innerHTML += `<div class="terminal-prompt" style="color:var(--neon-red)">> NULL RESULT. NO RECORDS FOUND.</div>`;
+                    return;
+                }
+                let keys = Object.keys(data[0]);
+                let tableHtml = `<table class="data-table"><thead><tr>${keys.map(k => `<th>${k}</th>`).join('')}</tr></thead><tbody>`;
+                data.forEach(row => {
+                    tableHtml += `<tr>${keys.map(k => {
+                        let val = row[k];
+                        if (Array.isArray(val)) { val = val.join(', '); }
+                        else if (typeof val === 'object' && val !== null) { val = val.teamName || val.gamertag || val.refereeName || val.name || val.title || JSON.stringify(val); }
+                        else if (val === null) { val = "-"; }
+                        return `<td>${val}</td>`
+                    }).join('')}</tr>`;
+                });
+                tableHtml += `</tbody></table>`;
+                term.innerHTML += tableHtml;
+                term.innerHTML += `<div class="terminal-prompt" style="color:var(--neon-yellow); margin-top:15px;">> PROCESS COMPLETE. ${data.length} RECORDS RETRIEVED._</div>`;
+            } catch(e) { 
+                console.error(e);
+                term.innerHTML += `<div class="terminal-prompt" style="color:red">>> FATAL ERROR: CONNECTION LOST</div>`; 
+            }
+        }
+
+        // UTILS
+        async function postData(ep, data) { try { await fetch(API+ep, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); showMsg('SUCCESS', 'success'); } catch(e){ showMsg('ERROR', 'error'); } }
+        async function getData(ep) { const res = await fetch(API+ep); return await res.json(); }
+        async function deleteItem(coll, id) { if(!confirm('CONFIRM?')) return; await fetch(`${API}/${coll}/${id}`, {method:'DELETE'}); showMsg('DELETED', 'success'); switchTab(coll); }
+        window.onload = () => loadTeams();
+    </script>
+</body>
+</html>
+    <style>
+        :root {
+            --neon-red: #ff005c;
+            --neon-cyan: #00f3ff;
+            --neon-yellow: #ffdd00;
+            --neon-green: #00ff99;
+            --panel-bg: rgba(0, 0, 0, 0.5);
+        }
+        body {
+            margin: 0; padding: 0; background: #000; color: white; overflow-x: hidden;
+            background-image: radial-gradient(circle at center, #111 0%, #000 80%);
+        }
+
+        /* --- BACKGROUND ANIMATIONS --- */
+        .bg-stars {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(ellipse at center, #222 0%, transparent 70%), url('https://www.transparenttextures.com/patterns/stardust.png');
+            background-size: cover, auto; z-index: -4; opacity: 0.1; pointer-events: none; 
+        }
+
+        .bg-grid {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
